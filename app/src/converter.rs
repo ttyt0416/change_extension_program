@@ -114,6 +114,14 @@ impl Default for ConverterPage {
     }
 }
 
+impl eframe::App for ConverterPage {
+    fn ui(&mut self, ui: &mut Ui, _frame: &mut eframe::Frame) {
+        self.show_menu_bar(ui);
+        self.show(ui);
+        self.show_settings_window(ui.ctx());
+    }
+}
+
 impl ConverterPage {
     pub(crate) fn show_menu_bar(&mut self, root_ui: &mut Ui) {
         egui::Panel::top("menu_bar")
@@ -144,18 +152,14 @@ impl ConverterPage {
             });
     }
 
-    pub(crate) fn show(&mut self, root_ui: &mut Ui) -> bool {
+    pub(crate) fn show(&mut self, root_ui: &mut Ui) {
         self.collect_results();
-        let mut back = false;
         egui::CentralPanel::default()
             .frame(egui::Frame::NONE.fill(BACKGROUND).inner_margin(24.0))
             .show(root_ui, |ui| {
                 apply_text_contrast(ui);
-                back = back_chevron(ui);
-                ui.add_space(24.0);
                 self.content(ui);
             });
-        back
     }
 
     pub(crate) fn show_settings_window(&mut self, ctx: &egui::Context) {
@@ -538,28 +542,6 @@ fn apply_text_contrast(ui: &mut Ui) {
         widget.bg_fill = fill;
         widget.fg_stroke.color = Color32::BLACK;
     }
-}
-
-fn back_chevron(ui: &mut Ui) -> bool {
-    let (rect, response) = ui.allocate_exact_size(Vec2::splat(32.0), Sense::click());
-    let response = response.on_hover_cursor(egui::CursorIcon::PointingHand);
-    let center = rect.center();
-    let stroke = Stroke::new(2.5, Color32::WHITE);
-    ui.painter().line_segment(
-        [
-            egui::pos2(center.x + 4.0, center.y - 8.0),
-            egui::pos2(center.x - 4.0, center.y),
-        ],
-        stroke,
-    );
-    ui.painter().line_segment(
-        [
-            egui::pos2(center.x - 4.0, center.y),
-            egui::pos2(center.x + 4.0, center.y + 8.0),
-        ],
-        stroke,
-    );
-    response.clicked()
 }
 
 fn category_tab(ui: &mut Ui, category: Category, selected: bool) -> bool {

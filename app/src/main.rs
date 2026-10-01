@@ -1,19 +1,16 @@
 #![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
 
-mod button;
 mod converter;
-mod home;
-mod icons;
 
+use converter::ConverterPage;
 use eframe::egui;
-use home::HomeApp;
 
 pub(crate) const BACKGROUND: egui::Color32 = egui::Color32::from_rgb(43, 47, 53);
 
 fn main() -> eframe::Result {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_title("파일 워크스페이스")
+            .with_title("파일 워크스페이스 - 확장자 변환")
             .with_inner_size([720.0, 480.0])
             .with_min_inner_size([440.0, 280.0]),
         ..Default::default()
@@ -25,7 +22,7 @@ fn main() -> eframe::Result {
         Box::new(|cc| {
             install_korean_font(&cc.egui_ctx);
             cc.egui_ctx.set_visuals(egui::Visuals::dark());
-            Ok(Box::new(HomeApp::default()))
+            Ok(Box::new(ConverterPage::default()))
         }),
     )
 }
