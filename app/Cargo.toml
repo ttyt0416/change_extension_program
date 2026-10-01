@@ -1,0 +1,9 @@
+[package]
+name = "photo_tools"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+convert-engine = { path = "../convert-engine" }
+eframe = { version = "0.36.2", default-features = false, features = ["default_fonts", "glow"] }
+rfd = "0.17.2"
