@@ -4,7 +4,12 @@ use std::fs::{self, File, OpenOptions};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
-pub const OUTPUT_FORMATS: &[&str] = &["TXT", "MD", "HTML", "CSV", "TSV", "PDF"];
+mod office;
+
+pub const HWP_NOTICE: &str = office::HWP_NOTICE;
+pub const OUTPUT_FORMATS: &[&str] = &[
+    "TXT", "MD", "HTML", "CSV", "TSV", "PDF", "DOCX", "HWP", "HWPX",
+];
 
 pub fn output_formats_for(input: &Path) -> &'static [&'static str] {
     let extension = input
@@ -46,11 +51,28 @@ pub fn output_formats_for(input: &Path) -> &'static [&'static str] {
     } else if extension.eq_ignore_ascii_case("docx") {
         let txt = office_text(input, "word/document.xml", OfficeKind::Docx).is_ok();
         let pdf = office2pdf::convert(input).is_ok();
-        match (txt, pdf) {
-            (true, true) => &["TXT", "PDF"],
-            (true, false) => &["TXT"],
-            (false, true) => &["PDF"],
-            (false, false) => &[],
+        let hwp = office::docx_supported(input);
+        match (txt, pdf, hwp) {
+            (true, true, true) => &["TXT", "PDF", "HWP", "HWPX"],
+            (true, false, true) => &["TXT", "HWP", "HWPX"],
+            (false, true, true) => &["PDF", "HWP", "HWPX"],
+            (false, false, true) => &["HWP", "HWPX"],
+            (true, true, false) => &["TXT", "PDF"],
+            (true, false, false) => &["TXT"],
+            (false, true, false) => &["PDF"],
+            (false, false, false) => &[],
+        }
+    } else if extension.eq_ignore_ascii_case("hwp") {
+        if office::hwp_supported(input) {
+            &["DOCX", "HWPX"]
+        } else {
+            &[]
+        }
+    } else if extension.eq_ignore_ascii_case("hwpx") {
+        if office::hwpx_supported(input) {
+            &["DOCX", "HWP"]
+        } else {
+            &[]
         }
     } else if extension.eq_ignore_ascii_case("odt") {
         if office_text(input, "content.xml", OfficeKind::Odt).is_ok() {
@@ -97,6 +119,12 @@ pub fn convert(
                 .map_err(|error| Error::Document(error.to_string()))?
                 .pdf
         }
+        ("docx", "hwp") => office::docx_to_hwp(input)?,
+        ("hwp", "docx") => office::hwp_to_docx(input)?,
+        ("docx", "hwpx") => office::docx_to_hwpx(input)?,
+        ("hwpx", "docx") => office::hwpx_to_docx(input)?,
+        ("hwp", "hwpx") => office::hwp_to_hwpx(input)?,
+        ("hwpx", "hwp") => office::hwpx_to_hwp(input)?,
         ("odt", "txt") => office_text(input, "content.xml", OfficeKind::Odt)?.into_bytes(),
         _ => return Err(unsupported(Category::Document, target_extension)),
     };
@@ -419,7 +447,7 @@ mod tests {
             .pack(File::create(&input).unwrap())
             .unwrap();
 
-        assert_eq!(output_formats_for(&input), &["TXT", "PDF"]);
+        assert_eq!(output_formats_for(&input), &["TXT", "PDF", "HWP", "HWPX"]);
 
         let output = convert(&input, "pdf", &directory).unwrap();
         assert!(fs::read(&output).unwrap().starts_with(b"%PDF-"));

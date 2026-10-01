@@ -194,6 +194,8 @@ impl ConverterPage {
                                 .unwrap_or_else(|| "선택되지 않음".to_owned()),
                         );
                     });
+                    ui.add_space(12.0);
+                    ui.label(convert_engine::document::HWP_NOTICE);
                 });
             self.settings_open = open;
         }
